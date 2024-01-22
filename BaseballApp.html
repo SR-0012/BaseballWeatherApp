@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>野球天気アプリ</title>
+    <style>
+        body{
+            background-color: rgb(246, 246, 230);
+        }
+        .selection-row {
+            display: flex;
+            align-items: center;
+            gap: 10px; 
+        }
+
+        #team-select {
+            width: 150px;
+            height: 30px;
+        }
+
+        .submit-button {
+            margin-top: 20px;
+            margin-bottom: 20px; 
+            width: 150px; 
+            height: 30px;
+        }
+
+        .forecast-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .forecast-item {
+            font-size: 1.5em;
+            flex: 1 1 18%;
+            min-width: 250px;
+            max-width: calc(30% - 10px); 
+            border: 1px solid #ccc;
+            padding: 2px;
+            margin-bottom: 10px; 
+            margin-right: 15px;
+            margin-left: 15px;
+            box-shadow: 0 6px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+            background-color: rgb(251, 218, 240);
+        }
+        img {
+            width: 100px;
+        }
+        .bold {
+            font-weight: bold;
+        }
+        .wind-direction {
+            display: inline-block;
+        }
+
+        .Arrow{
+            margin-left: 30px;
+            width: 80px;  
+            height: auto; 
+        }
+
+        #icon{
+            margin-left: 50px;
+            width: 100px;  
+            height: auto; 
+        }
+
+        
+        @media (max-width: 768px) {
+            .forecast-item {
+                max-width: calc(33.333% - 10px);
+            }
+        }
+        @media (max-width: 480px) {
+            .forecast-item {
+                max-width: calc(50% - 10px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>野球天気アプリ</h1>
+    </header>
+    <main>
+        <div class="selection-row">
+            <h2>チームを選択:</h2>
+            <select id="team-select">
+                <option value="巨人">巨人</option>
+                <option value="阪神">阪神</option>
+                <option value="広島">広島</option>
+                <option value="DeNA">DeNA</option>
+                <option value="中日">中日</option>
+                <option value="ヤクルト">ヤクルト</option>
+                <option value="楽天">楽天</option>
+                <option value="西武">西武</option>
+                <option value="ロッテ">ロッテ</option>
+                <option value="日本ハム">日本ハム</option>
+                <option value="ソフトバンク">ソフトバンク</option>
+                <option value="オリックス">オリックス</option>
+            </select>
+            <button id="submit-button" class="submit-button">天気を見る</button>
+        </div>
+        <div id="forecast-container" class="forecast-container"></div>
+        
+    </main>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+    <script>
+    document.getElementById('submit-button').addEventListener('click', function() {
+        const team = document.getElementById('team-select').value;
+        fetch(`http://localhost:8000/weather?team=${encodeURIComponent(team)}`)
+            .then(response => response.json())
+            .then(data => {
+                displayForecastData(data);
+            })
+            .catch(error => {
+                console.error('Error fetching weather:', error);
+                document.getElementById('forecast-container').textContent = 'Error fetching weather data.';
+            });
+    });
+
+    function displayForecastData(data) {
+        console.log("data",data);
+        const forecastContainer = document.getElementById('forecast-container');
+        const venueName = data.venue;
+        const parkdeg = data.parkdeg;
+        console.log("parkdeg",parkdeg);
+        console.log("venueName",venueName);
+        forecastContainer.innerHTML = '';
+
+        data.weather.list.forEach((forecast, index) => {
+            if (index < 40) { 
+                const windDirection = forecast.wind.deg;
+                const dateTime = new Date(forecast.dt * 1000);
+                const temp = forecast.main.temp;
+                const description = forecast.weather[0].description;
+                const translatedDescription = translateWeatherDescription(description);
+                const humidity = forecast.main.humidity
+                const clouds = forecast.clouds.all;
+                const windSpeed = forecast.wind.speed;
+                const iconUrl = `http://openweathermap.org/img/wn/${forecast.weather[0].icon}@2x.png`;
+
+
+                const arrowImageHtml = document.createElement('img');
+                arrowImageHtml.src = 'arrow018-removebg-preview.png';
+                arrowImageHtml.alt = 'Wind direction arrow';
+                arrowImageHtml.style = `transform: rotate(${windDirection+90}deg);`; // 画像を風向きに合わせて回転
+                arrowImageHtml.className = 'Arrow';
+
+                // const parkArrowImageImage = document.createElement('img');
+                // parkArrowImageHtml.src = 'arrow018-removebg-preview.png';
+                // parkArrowImageHtml.alt = 'Wind direction arrow';
+                // parkArrowImageHtml.style = `transform: rotate(${windDirection+90-parkdeg}deg);`; // 画像を風向きに合わせて回転
+                // parkArrowImageHtml.className = 'Arrow';
+
+                const forecastItem = document.createElement('div');
+                forecastItem.className = 'forecast-item';
+
+                forecastItem.innerHTML = `
+                    <div>
+                        <span class="bold">球場名: ${venueName}</span><br>
+                        <span class="bold">${dateTime.toLocaleDateString()} ${dateTime.toLocaleTimeString()}</span><br>
+                        <span>天気: ${translatedDescription}</span><br>
+                        <span>気温: ${temp.toFixed(2)}℃</span><br>
+                        <span>湿度: ${humidity.toFixed(2)}%</span><br>
+                        <span>雲量: ${clouds}%</span><br>
+                        <span>風向き: ${windDirection}℃</span>
+                        <span class="wind-arrow">${arrowImageHtml.outerHTML}</span><br>
+                        <span>風速: ${windSpeed}m/s</span><br>
+                        <img id="icon" src="${iconUrl}">
+                    </div>`;
+                forecastContainer.appendChild(forecastItem);
+            }
+        });
+    }
+    
+    function translateWeatherDescription(description) {
+    switch (description) {
+        case 'clear sky':
+            return '晴れ';
+        case 'few clouds':
+            return '少し曇り';
+        case 'scattered clouds':
+            return '雲が散らばっている';
+        case 'broken clouds':
+            return '雲が多い';
+        case 'light rain':
+            return '小雨';
+        case 'shower rain':
+            return 'にわか雨';
+        case 'rain':
+            return '雨';
+        case 'thunderstorm':
+            return '雷雨';
+        case 'snow':
+            return '雪';
+        case 'mist':
+            return '霧';
+        case 'overcast clouds':
+            return '完全に曇った';
+        default:
+            return description; 
+    }
+}
+    </script>
+</body>
+</html>
